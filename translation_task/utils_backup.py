@@ -15,7 +15,7 @@ from torch.utils.data import Dataset, DataLoader
 from datasets import load_dataset
 import evaluate
 import gc
-import openai
+from openai import OpenAI
 
 from tqdm.auto import tqdm
 import asyncio
@@ -681,10 +681,10 @@ def translate_OPUS_MT(all_text, model_path, device='cuda:0'):
             
 # GPT-4 Translation
 def translate_GPT(all_text, target_lang, api_key):
-    openai.api_key = api_key
+    client = OpenAI(api_key=api_key,)
 #     entities = ", ".join(list_of_entities)
     async def query_llm(text, model="gpt-4o"):
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
           model=model,
           messages=[
             {
@@ -780,10 +780,10 @@ def translate_gemini(all_text, target_lang, api_key):
 
 # GPT-4 NER
 def extract_entities_GPT(all_text, entity, api_key, list_of_entities=['Name','Age','Money','Zipcode','SSN','Date']):
-    openai.api_key = api_key
+    client = OpenAI(api_key=api_key,)
 #     entities = ", ".join(list_of_entities)
     async def query_llm(text, model="gpt-4-turbo"):
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
           model=model,
           messages=[
             {
