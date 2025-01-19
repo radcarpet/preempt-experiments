@@ -1,28 +1,9 @@
-import re
-import random_name_generator as rng
-import math
-import numpy as np
-from pyfpe_ff3 import FF3Cipher, format_align_digits
-
 import sys
 sys.path.insert(0, '../universal-ner')
 from src.utils import *
-from utils_backup import *
-from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
-import torch
-from torch.utils.data import Dataset, DataLoader
-from datasets import load_dataset
-import evaluate
-import gc
-import openai
-
+from preempt_scratch.utils.utils_backup import *
 from tqdm.auto import tqdm
-import asyncio
-import ast
 import argparse
-import json
-import traceback 
-import time
 import datetime
 import os
 
@@ -243,14 +224,14 @@ for entity in entities:
         
         # GPT-4
         if 'gpt' in model_path.lower():
-            save_path = f"results/gpt-4-turbo-2024-04-09_ner_extract_{entity}_{lang}.json"
+            save_path = f"results/gpt-4_ner_extract_{entity}_{lang}.json"
             if not os.path.isfile(save_path):
                 extracted, _ = extract_entities_GPT(
                     data_dict[lang][entity],
                     entity=entity,
                     api_key = api_key,
                 )
-                save_json_list(extracted, f"results/gpt-4-turbo-2024-04-09_ner_extract_{entity}_{lang}.json")
+                save_json_list(extracted, f"results/gpt-4_ner_extract_{entity}_{lang}.json")
             else:
                 extracted = load_json_dataset(save_path)    
 

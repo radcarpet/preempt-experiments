@@ -7,7 +7,7 @@ mkdir results
 MODEL=/PATH/TO/gemma-2-9b-it
 DATA=datasets/pii-masking-200k/pii_masking_200k_en_fr_de_test_v3.json
 API_KEY=SECRET_KEY
-SAMPLES=300
+SAMPLES=50
 ENTITY=Name
 LANG=all
 python ner_comparison.py \

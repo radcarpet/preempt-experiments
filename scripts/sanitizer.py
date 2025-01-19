@@ -33,8 +33,6 @@ from pydantic import BaseSettings
 from dotenv import load_dotenv
 import asyncio
 
-import sys
-sys.path.append("..")
 from privacypromptrewriting.sanitize.sanitizer_agent import (
     SanitizerAgent,
     SanitizerAgentConfig,
@@ -112,7 +110,7 @@ def chat(opts: CLIOptions) -> None:
         return sanitized.content
 
 
-    texts = read_file_by_paragraphs('../datasets/q-a/finance.md')
+    texts = read_file_by_paragraphs('datasets/q-a/finance.md')
     async def _do_all():
         return await asyncio.gather(
             *(_do_task(text, i) for i, text in enumerate(texts))
@@ -123,7 +121,7 @@ def chat(opts: CLIOptions) -> None:
         sanitized_texts = asyncio.run(_do_all())
 
     # write out the sanitized texts to same file name with -sanitized appended
-    with open('../datasets/q-a/finance-sanitized.md', 'w') as file:
+    with open('datasets/q-a/finance-sanitized.md', 'w') as file:
         file.write('\n\n'.join(sanitized_texts))
 
     print('Done!')

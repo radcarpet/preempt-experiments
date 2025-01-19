@@ -1,126 +1,50 @@
-import re
-import random_name_generator as rng
-import math
 import numpy as np
-from pyfpe_ff3 import FF3Cipher, format_align_digits
+from pyfpe_ff3 import FF3Cipher
 
 import sys
 sys.path.insert(0, '../universal-ner')
 from src.utils import *
+sys.path.insert(0, '../utils')
 from utils_backup import *
 import torch
-from torch.utils.data import Dataset, DataLoader
-from datasets import load_dataset
 import evaluate
-import gc
-import openai
 
 from tqdm.auto import tqdm
-import asyncio
-import ast
 import argparse
 import json
-import traceback 
-import time
 import os
+
+import traceback
 
 """
 # PIPELINE:
 
 1. Use the finetuned NER model (Uni-NER)/other open source models to extract entities.
-2. Substitute with the crypto scheme
+2. Use appropriate security scheme
 3. Translate with offline/online models
 4. Use the finetuned NER model/other open source models to extract entities
-5. Substitute with the crpto scheme
+5. Use appropriate security scheme
 6. Comparisons
 """
 
-
-##### 0. Data preprocessing
-
+###################################
+##### 0. Data preprocessing #######
+###################################
 def parse_args():
     parser = argparse.ArgumentParser(description="Translation eval for Preempt")
-    parser.add_argument(
-        "--task",
-        type=str,
-        default='de-en',
-        help="de-en, fr-en, cs-en etc."
-    )
-    
-    parser.add_argument(
-        "--entity",
-        type=str,
-        default=None,
-        help="Name, Money, Age, Zipcode, All"
-    )
-    
-    parser.add_argument(
-        "--lang",
-        type=str,
-        default=None,
-        help="english, german, french"
-    )
-
-    parser.add_argument(
-        "--device",
-        type=str,
-        default='cuda:0',
-        help="Device to mount",
-    )
-
-    parser.add_argument(
-        "--translation_model",
-        type=str,
-        default='gpt-4',
-        help="Model for translation. Use path",
-    )
-
-    parser.add_argument(
-        "--batch_size",
-        type=int,
-        default=1,
-        help="Batch size",
-    )
-
-    parser.add_argument(
-        "--seed",
-        type=int,
-        default=1,
-        help="Crypto seed"
-    )
-    parser.add_argument(
-        "--ner_path",
-        type=str,
-        default=None,
-        help="NER model path",
-    )
-    parser.add_argument(
-        "--tag",
-        type=str,
-        default=None,
-        help="Tag for saving results"
-    )
-    parser.add_argument(
-        "--samples",
-        type=int,
-        default=50,
-        help="Samples for testing"
-    )
-    
-    parser.add_argument(
-        "--exact_indices",
-        type=str,
-        default=None,
-        help="Samples for testing"
-    )
-    
-    parser.add_argument(
-        "--api_key",
-        type=str,
-        default=None,
-        help="API key for online translation"
-    )
-    
+    parser.add_argument("--task",type=str,default='de-en',help="de-en, fr-en, cs-en etc.")    
+    parser.add_argument("--entity",type=str,default=None,help="Name, Money, Age, Zipcode, All")    
+    parser.add_argument("--lang",type=str,default=None,help="english, german, french")
+    parser.add_argument("--device",type=str,default='cuda:0',help="Device to mount",)
+    parser.add_argument("--translation_model",type=str,default='gpt-4',help="Model for translation. Use path",)
+    parser.add_argument("--batch_size",type=int,default=1,help="Batch size",)
+    parser.add_argument("--seed",type=int,default=1,help="Crypto seed")
+    parser.add_argument("--ner_path",type=str,default=None,help="NER model path",)
+    parser.add_argument("--tag",type=str,default=None,help="Tag for saving results")
+    parser.add_argument("--samples",type=int,default=50,help="Samples for testing")    
+    parser.add_argument("--exact_indices",type=str,default=None,help="Samples for testing")    
+    parser.add_argument("--api_key",type=str,default=None,help="API key for online translation")    
+    parser.add_argument("--use_fpe",type=bool,default=False,help="Use FPE for names and money")    
     args = parser.parse_args()
     return args
 
@@ -140,6 +64,32 @@ def load_data(big_fp):
     with open(big_fp, 'r') as fp:
           data = json.load(fp)
     return data        
+
+def entity_extractor(model,tokenizer,ner_path,data,batch_size,entity,device,):
+
+    if "UniNER" in ner_path or 'uniner' in ner_path or 'universal' in ner_path:
+        ner_name = 'uniner'
+    elif 'gemma' in ner_path:
+        ner_name = 'gemma'
+    elif 'llama' in ner_path:
+        ner_name = 'llama'
+
+    entity_extractor = {
+        "uniner": extract_entities_LLM_sp_old,
+        "gemma": extract_entities_gemma,
+        "llama": extract_entities_llama,
+    }
+
+    extracted = entity_extractor[ner_name](
+        all_text=data,
+        model=model,
+        tokenizer=tokenizer,
+        batch_size=batch_size,
+        entity_type=entity,
+        device=device,
+    )[entity]
+
+    return extracted
 
 seed = 0
 seed_everything(seed)
@@ -190,9 +140,11 @@ for entity in named_entities:
     num_data_en.extend(data[f'{source_lang}_data'])
     num_data_de.extend(data[f'{target_lang}_data'])
 
-# exact_indices = load_data(args.exact_indices)['matching_indices']
-# num_data_en = [num_data_en[i] for i in exact_indices]
-# num_data_de = [num_data_de[i] for i in exact_indices]
+nd = None   
+if args.use_fpe and entity=='Name':
+    from names_dataset import NameDataset
+    nd = NameDataset()
+    
 num_data_en = num_data_en[:args.samples]
 num_data_de = num_data_de[:args.samples]
 
@@ -200,17 +152,22 @@ print('Data size:', len(num_data_en))
 assert len(num_data_en[0]) >= 100
 
 print("\nSAMPLE:")
-print(num_data_en[-1])
-print(num_data_de[-1])
+print(num_data_en[-5:])
+print(num_data_de[-5:])
 
 # Sanitize data:
-
 N = {'Money': 100000} 
 rho = {'Money': .05} 
 epsilon = 1
 key = "EF4359D8D580AA4F7F036D6F04FC6A94"
 tweak = "D8E7920AFA330A73" 
-c = FF3Cipher(key, tweak,allow_small_domain=True, radix=10)
+
+# Used for FPE.
+cipher_fn = FF3Cipher(key, 
+                      tweak,
+                      allow_small_domain=True, 
+                      radix=10
+                     )
 
 all_data = {
     'extraction': {},
@@ -231,73 +188,76 @@ extracted_dict = {
     'tar_decrypted': {},
 }
 
-##### 1. NER extraction
+###################################
+##### 1. NER extraction ###########
+###################################
 tag = f'{args.tag}'
 data = num_data_en
-# print(data, '\n')
-# if not os.path.exists(tag):
-if True:
+
+if not os.path.exists(tag):
     os.makedirs(tag, exist_ok=True)
     
     print("\nNER extraction...")
+    tokenizer = AutoTokenizer.from_pretrained(model_path)
+    model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16)
+    model.to(device)
+    model.eval()
 
     for entity in named_entities:
-        if 'uniner' in model_path:
-            extracted = extract_entities_LLM(
-                            data,
-                            model_path,
-                            batch_size=batch_size,
-                            entity_type=entity,
-                            device=device,
-                        )[entity]
-            
-        elif 'gemma' in model_path:
-            extracted = extract_entities_gemma(
-                data, model_path, batch_size, entity, device
-            )[entity]
-            
-        else:
-            extracted = extract_entities_llama(
-                data, model_path, batch_size, entity, device
-            )[entity]
-
+        extracted = entity_extractor(model,tokenizer,model_path,data,batch_size,entity,device,)
         extracted_dict['src_extraction'][entity] = extracted
 
-    print(extracted[-1], '\n')
+    print("\nEXTRACTED:\n",extracted[-5:], '\n')
+    print(len(extracted))
+    
     # Save this!
     all_data['extraction'] = extracted_dict
     tag = f'{args.tag}/all_data.json'
     save_fn(all_data, tag)
 
-
-    ##### 2. Sanitation
-    print("Sanitation...")
+    ###################################
+    ##### 2. Sanitization #############
+    ###################################
+    print("Sanitization...")
     for entity in named_entities:
-        encrypted_values = get_encrypted_values(
+        encrypted_values, names_lookup, names_mapping = get_encrypted_values(
             inputs=extracted_dict['src_extraction'][entity],
             entity=entity,
-            N=N, rho=rho, epsilon=epsilon, c=c,)
+            N=N, rho=rho, epsilon=epsilon, c=cipher_fn, nd=nd, use_fpe=args.use_fpe)
 
         extracted_dict['src_encrypted'][entity] = encrypted_values
 
-
-    print(encrypted_values[-1], '\n')
+    print("\nENCRYPTED VALUES:\n",encrypted_values[-5:], '\n')
     # Do entity based substitution. For a list of lists, return a list of lists.
     data_encrypted = []
+    invalid_indices = []
+
+    def finder(word1, word2):
+        encoded1 = unicodedata.normalize('NFC', word1)
+        encoded2 = unicodedata.normalize('NFC', word2)
+        return encoded1==encoded2
+
+    print(len(encrypted_values), len(data))
     # Get the ith data string.
     for i, line in enumerate(data):
         # Substitute for all entities
+        line_copy = data[i]
         for entity in named_entities:
             # Get extracted/encrypted data for the ith line.
             # Substitute all values.
-            # print(extracted_dict['src_extraction'][entity][i])
-            # print(extracted_dict['src_encrypted'][entity][i])
             for value, encrypt in zip(extracted_dict['src_extraction'][entity][i], extracted_dict['src_encrypted'][entity][i]):
-                # print(value, encrypt)
-                line = line.replace(value, encrypt)
-                # print(line)
+                print(i, repr(value), repr(encrypt))
+                if value is not None:
+                    enc_line = unicodedata.normalize('NFC',line).replace(unicodedata.normalize('NFC',value), encrypt)
+                else:
+                    enc_line = line
 
-        data_encrypted.append(line)
+        data_encrypted.append(enc_line)
+        if finder(enc_line,line_copy):
+                print("\nNER failed.", i)
+                invalid_indices.append(i)
+                print(line)
+                print(enc_line)
 
     # Save this!
     all_data['data_raw'] = data
@@ -305,9 +265,11 @@ if True:
     tag = f'{args.tag}/all_data.json'
     save_fn(all_data, tag)
 
-    print(data_encrypted[-1], '\n')
+    print(data_encrypted[-5:], '\n')
     
-    ##### 3. Translation
+    ###################################
+    ##### 3. Translation ##############
+    ###################################
     print("Translation...")
     # Translate with GPT:
     if trans_model=='gpt-4':
@@ -322,63 +284,67 @@ if True:
     tag = f'{args.tag}/all_data.json'
     save_fn(all_data, tag)
 
-    print(data_encrypted_translated[-1], '\n')
+    print(data_encrypted_translated[-5:], '\n')
 
-    ##### 4. NER Extraction
+    ###################################
+    ##### 4. NER Extraction ###########
+    ###################################
     print("Extraction...")
-    for entity in named_entities:
-        if 'uniner' in model_path:
-            extracted = extract_entities_LLM(
-                            data_encrypted_translated,
-                            model_path,
-                            batch_size=batch_size,
-                            entity_type=entity,
-                            device=device,
-                        )[entity]
-        
-        elif 'gemma' in model_path:
-            extracted = extract_entities_gemma(
-                data_encrypted_translated, model_path, batch_size, entity, device
-            )[entity]
-        
-        else:
-            extracted = extract_entities_llama(
-                data_encrypted_translated, model_path, batch_size, entity, device
-            )[entity]
+    # We skip extraction during translation...
 
-        extracted_dict['tar_extraction'][entity] = extracted
+    # for entity in named_entities:
+    #     extracted = entity_extractor(model,tokenizer,model_path,data,batch_size,entity,device,)
+
+    #     extracted_dict['tar_extraction'][entity] = extracted
 
     # Save this!
-    all_data['extraction'] = extracted_dict
-    tag = f'{args.tag}/all_data.json'
-    save_fn(all_data, tag)
+    # all_data['extraction'] = extracted_dict
+    # tag = f'{args.tag}/all_data.json'
+    # save_fn(all_data, tag)
 
-    print(extracted[-1], '\n')
+    # print(extracted, '\n')
 
-    ##### 5. Decryption
+    ###################################
+    ##### 5. Decryption ###############
+    ###################################
     print("Decrpytion...")
     # Do entity based substitution. For a list of lists, return a list of lists.
     data_decrypted = []
     # Get the ith data string.
+    errors = []
     for i, line in enumerate(data_encrypted_translated):
         # Substitute for all entities
-        for entity in named_entities:
+        try:
             # Get extracted/encrypted data for the ith line.
             # Substitute all values.
-            for value, decrypt in zip(extracted_dict['tar_extraction'][entity][i], extracted_dict['src_extraction'][entity][i]):
-                line = line.replace(value, decrypt)
+            decrypted_line = get_decrypted_values(line,
+                                        entity,
+                                        None, 
+                                        extracted_dict['src_extraction'][entity][i],
+                                        names_lookup,
+                                        names_mapping,
+                                        cipher_fn,
+                                        use_fpe=args.use_fpe,
+                                        decrypt_task='translation'
+                                        )
 
-        data_decrypted.append(line)
+            data_decrypted.append(decrypted_line)
+        except Exception as e:
+            print("ERROR", i)
+            print(traceback.format_exc())
+            errors.append(i)
 
+    print(errors)
     # Save this!
     all_data['translated_data_decrypted'] = data_decrypted
     tag = f'{args.tag}/all_data.json'
     save_fn(all_data, tag)
     
-    print(data_decrypted[-1], '\n')
+    print(data_decrypted[-5:], '\n')
     
-    
-    ##### 6. Plain translation, for metrics.
+    ###################################
+    ##### 6. Plain translation ########
+    ###################################
     print("Plain translation...")
     # Translate with GPT:
     if trans_model=='gpt-4':
@@ -393,37 +359,46 @@ if True:
     tag = f'{args.tag}/all_data.json'
     save_fn(all_data, tag)
         
-    print(data_plain_translated[-1], '\n')
+    print(data_plain_translated[-5:], '\n')
 
 else:
     all_data = load_data(f'{args.tag}/all_data.json')
     extracted_dict = all_data['extraction']    
-    
-##### 7. Metrics
+
+###################################   
+##### 7. Metrics ##################
+###################################
 print("Metrics...")
 print("References:")
-num_data_de = [[i] for i in num_data_de]
-print(num_data_de[:5], '\n')
+num_data_de = [[unicodedata.normalize('NFC',i)] for i in num_data_de]
+print(num_data_de[-5:], '\n')
+
 # Score translation:
 metric = evaluate.load('bleu')
 predictions = all_data['translated_data_decrypted']
 print("Preempt Translations:")
-print(predictions[:5], '\n')
+print(predictions[-5:], '\n')
 references = num_data_de
+print("Missed Sanitization:", len(invalid_indices))
+predictions = [predictions[i] for i in range(len(predictions)) if i not in invalid_indices]
+references = [references[i] for i in range(len(references)) if i not in invalid_indices]
 bleu_score = metric.compute(predictions=predictions, references=references)
+print(len(predictions))
 print(f"\nSanitized:\n", bleu_score)
-
 all_data['sanitized_bleu_score'] = bleu_score
 
 metric = evaluate.load('bleu')
 predictions = all_data['data_plain_translated']
 print("\nPlain Translations:")
-print(predictions[:5], '\n')
+print(predictions[-5:], '\n')
 references = num_data_de
+predictions = [predictions[i] for i in range(len(predictions)) if i not in invalid_indices]
+references = [references[i] for i in range(len(references)) if i not in invalid_indices]
 bleu_score = metric.compute(predictions=predictions, references=references)
 print(f"\nPlain:\n", bleu_score)
 
 all_data['plain_bleu_score'] = bleu_score
+all_data['invalid_indices'] = invalid_indices
 
 tag = f'{args.tag}/all_data.json'
 save_fn(all_data, tag)

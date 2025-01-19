@@ -3,8 +3,6 @@ from typing import List
 from dotenv import load_dotenv
 import asyncio
 
-import sys
-sys.path.append("../..")
 from privacypromptrewriting.sanitize.sanitizer_agent import (
     SanitizerAgent,
     SanitizerAgentConfig,

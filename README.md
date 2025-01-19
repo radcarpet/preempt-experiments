@@ -1,8 +1,8 @@
 # preempt
-Code submission for USENIX-Security 2025
+Code submission for USENIX-Security
 
 ## Setup
-Install libraries in a Python3.11 venv with `packagelist.txt`.
+Install libraries in a conda environment with `packagelist.txt`.
 
 ## Running Experiments
 ### Translation and NER

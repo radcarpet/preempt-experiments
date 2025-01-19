@@ -4,8 +4,6 @@ from dotenv import load_dotenv
 import asyncio
 import json
 
-import sys
-sys.path.append("../..")
 from privacypromptrewriting.sanitize.desanitizer_agent import (
     DesanitizerAgent,
     DesanitizerAgentConfig,
