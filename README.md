@@ -1,5 +1,5 @@
 # preempt
-Code submission for USENIX-Security
+Code submission for ACM CCS 2025
 
 ## Setup
 Install libraries in a Python 3.11.4 virtual environment with `requirements.txt`.
