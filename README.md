@@ -2,23 +2,18 @@
 Code submission for USENIX-Security
 
 ## Setup
-Install libraries in a conda environment with `packagelist.txt`.
+Install libraries in a Python 3.11.4 virtual environment with `requirements.txt`.
 
 ## Running Experiments
 ### Translation and NER
-
-All relevant translation experiment code and details can be found under `translation_task`.
+All relevant translation experiment code, results and details can be found under `translation_task`.
 
 Using the [Universal-NER](https://github.com/universal-ner/universal-ner) models requires its own setup. Please follow instructions in the `universal-ner` folder.
 
-### Medical QA
+### Long-Context Q/A
+All relevant long-context Q/A experiment code, results and details can be found under `long_context_task`.
 
-The code used for the medical QA experiments is available under `notebooks/medical_qa.ipynb`. 
-- The data used for medical QA experiments is available under `datasets/medical-qa`. New data can be generated using the notebook.
-
-### Financial QA
-
-The code used for Financial QA experiments is available under `notebooks/financial_qa.ipynb`.
+### Multi-turn Financial Q/A
 
 ### RAG
 Spin up local LLM using:
@@ -41,3 +36,6 @@ The last option `-st` option is to specify "sanitization type" (default is "fpe"
  - `aes` = AES
  - `rand` = RAND
  - `fpe` = FPE
+
+### Comparisons with PAPILLON
+We compare the performance of Preempt with PAPILLON on the translation and long-context Q/A tasks. Relevant commands to run PAPILLON on our datasets and corresponding results can be found in the `PAPILLON` folder.
