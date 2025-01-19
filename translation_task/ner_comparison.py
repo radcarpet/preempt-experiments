@@ -10,72 +10,16 @@ import os
 def parse_args():
     parser = argparse.ArgumentParser(description="Translation eval for Preempt")
     
-    parser.add_argument(
-        "--api_key",
-        type=str,
-        default=None,
-        help="Name, Money, Age, Zipcode, All"
-    )
-    
-    parser.add_argument(
-        "--entity",
-        type=str,
-        default=None,
-        help="Name, Money, Age, Zipcode, All"
-    )
-    
-    parser.add_argument(
-        "--lang",
-        type=str,
-        default=None,
-        help="english, german, french"
-    )
-
-    parser.add_argument(
-        "--device",
-        type=int,
-        default=None,
-        help="Device to mount",
-    )
-
-    parser.add_argument(
-        "--data_path",
-        type=str,
-        default=None,
-        help="Data path for NER comparison",
-    )
-    
-    parser.add_argument(
-        "--batch_size",
-        type=int,
-        default=1,
-        help="Batch processing"
-    )
-    
-    parser.add_argument(
-        "--seed",
-        type=int,
-        default=1,
-        help="seed"
-    )
-    parser.add_argument(
-        "--ner_path",
-        type=str,
-        default=None,
-        help="NER model path",
-    )
-    parser.add_argument(
-        "--tag",
-        type=str,
-        default=datetime.datetime.now(),
-        help="Tag for saving results"
-    )
-    parser.add_argument(
-        "--samples",
-        type=int,
-        default=4,
-        help="Samples for testing"
-    )
+    parser.add_argument("--api_key",type=str,default=None,help="Name, Money, Age, Zipcode, All")
+    parser.add_argument("--entity",type=str,default=None,help="Name, Money, Age, Zipcode, All")
+    parser.add_argument("--lang",type=str,default=None,help="english, german, french")
+    parser.add_argument("--device",type=int,default=None,help="Device to mount",)
+    parser.add_argument("--data_path",type=str,default=None,help="Data path for NER comparison",)
+    parser.add_argument("--batch_size",type=int,default=1,help="Batch processing")
+    parser.add_argument("--seed",type=int,default=1,help="seed")
+    parser.add_argument("--ner_path",type=str,default=None,help="NER model path",)
+    parser.add_argument("--tag",type=str,default=datetime.datetime.now(),help="Tag for saving results")
+    parser.add_argument("--samples",type=int,default=4,help="Samples for testing")
     
     args = parser.parse_args()
     return args
