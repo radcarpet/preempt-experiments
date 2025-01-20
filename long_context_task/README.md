@@ -6,9 +6,12 @@ Long-context Q/A experiments can be run using `long_QA_jobs.sh`.
 - A model is required for semantic textual similarity, which can be obtained from [here](https://huggingface.co/sentence-transformers/all-mpnet-base-v2)
 - Results are found in the `results` folder, with the format: `{ner_model}_ner_extract_{qa_model}_Name_0_50_{samples}`.
 
+---
 ### Comparisons with PAPILLON
 
 PAPILLON's responses for the long-context Q/A task and corresponding Semantic Textual Similarity scores can be found under `preempt/PAPILLON/results` as `papillon_long_context_task.csv` and `papillon_long_context_task.json` respectively.
+
+- Optimized prompts can be found under `preempt/PAPILLON/papillon/optimized_prompts/`.
 
 PAPILLON can be run on the long-context Q/A task as follows:
 1. Export OPENAI_API_KEY="<YOUR_OPENAI_API_KEY>" and go to `preempt/PAPILLON/`
