@@ -38,4 +38,6 @@ The last option `-st` option is to specify "sanitization type" (default is "fpe"
  - `fpe` = FPE
 
 ### Comparisons with PAPILLON
-We compare the performance of Preempt with PAPILLON on the translation and long-context Q/A tasks. Relevant commands to run PAPILLON on our datasets and corresponding results can be found in the `PAPILLON` folder.
+We compare the performance of Preempt with PAPILLON on the translation and long-context Q/A tasks. 
+
+Relevant commands to run PAPILLON on our datasets and corresponding results can be found in the `PAPILLON` folder.
