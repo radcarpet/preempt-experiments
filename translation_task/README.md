@@ -12,3 +12,25 @@ Translation experiments can be run using `translation_jobs_uniner_de.sh`.
 NER experiments can be run using `ner_extract_jobs.sh`.
 - The NER model path can be set with the `MODEL` field, including closed-source models (GPT-4 Turbo, Gemini-1.5, Claude 3.5 Sonnet).
 - This uses cached data found under `results/ner_results`.
+
+---
+### Comparisons with PAPILLON
+
+PAPILLON's responses for the translation task and corresponding BLEU scores can be found under `preempt/PAPILLON/results` as `papillon_translation_task_{Age/Name/Money}_{de/fr}.csv` and `papillon_translation_task_{Age/Name/Money}_{de/fr}.json` respectively. 
+
+- Optimized prompts can be found under `preempt/PAPILLON/papillon/optimized_prompts/`.
+
+PAPILLON can be run on the translation task as follows:
+1. Export OPENAI_API_KEY="<YOUR_OPENAI_API_KEY>" and go to `preempt/PAPILLON/`
+2. Host Llama-3.1 8B Instruct through SGLang:
+  - ```python -m sglang.launch_server --model-path meta-llama/Llama-3.1-8B-Instruct --port <PORT_NUMBER>```
+3. Optimize pipeline for translation:
+  - ```
+    cd papillon
+    
+    python3 run_dspy_optimization_llama.py --port <PORT_NUMBER> --prompt_output "papillon_translation_task_optimized_prompt_{de/fr}_{age/name/money}.json" --data_file "papillon_finetuning_translation_task_processed_{de/fr}_{age/name/money}.csv"
+    ```
+4. Evaluate pipeline:
+- ```
+  python3 evaluate_papillon.py --port <PORT_NUMBER> --model_name <MODEL_NAME> (e.g. meta-llama/Llama-3.1-8B-Instruct) --data_file "papillon_translation_task_{Age/Name/Money}_{de/fr}.csv"
+  ```
