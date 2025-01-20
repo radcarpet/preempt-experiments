@@ -13,7 +13,7 @@ from argparse import ArgumentParser
 import json
 
 os.environ["DSPY_CACHEDIR"] = os.path.join(os.getcwd(), 'cache')
-os.environ["OPENAI_API_KEY"] = "api-key"
+# os.environ["OPENAI_API_KEY"] = "api-key"
 
 llm_judge = LLMJudge()
 
