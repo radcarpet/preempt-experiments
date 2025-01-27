@@ -71,7 +71,7 @@ def entity_extractor(model,tokenizer,ner_path,data,batch_size,entity,device,):
         ner_name = 'uniner'
     elif 'gemma' in ner_path:
         ner_name = 'gemma'
-    elif 'llama' in ner_path:
+    elif 'llama' in ner_path or 'Llama' in ner_path:
         ner_name = 'llama'
 
     entity_extractor = {
