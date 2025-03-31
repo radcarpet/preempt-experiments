@@ -242,22 +242,30 @@ if not os.path.exists(tag):
     for i, line in enumerate(data):
         # Substitute for all entities
         line_copy = data[i]
+        enc_line = data[i]
         for entity in named_entities:
             # Get extracted/encrypted data for the ith line.
             # Substitute all values.
             for value, encrypt in zip(extracted_dict['src_extraction'][entity][i], extracted_dict['src_encrypted'][entity][i]):
-                print(i, repr(value), repr(encrypt))
-                if value is not None:
-                    enc_line = unicodedata.normalize('NFC',line).replace(unicodedata.normalize('NFC',value), encrypt)
+                # print(i, repr(value), repr(encrypt))
+                if value is not None and encrypt is not None:
+                    enc_line = unicodedata.normalize('NFC',enc_line).replace(unicodedata.normalize('NFC',value), encrypt)
+                    # print(enc_line)
+                    # input()
                 else:
                     enc_line = line
+                    break
 
         data_encrypted.append(enc_line)
-        if finder(enc_line,line_copy):
-                print("\nNER failed.", i)
-                invalid_indices.append(i)
-                print(line)
-                print(enc_line)
+        # Check if 
+        if extracted_dict['src_extraction'][entity][i][0]==None or extracted_dict['src_encrypted'][entity][i][0]==None:
+            # This NER failure condition is explicitly when
+            # NER fails to capture ANY PII value in the text.
+            # Age m-LDP needs to check if PII was extracted at all.
+            print("\nNER failed.", i)
+            invalid_indices.append(i)
+            print(line)
+            print(enc_line)
 
     # Save this!
     all_data['data_raw'] = data
