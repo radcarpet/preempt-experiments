@@ -1,5 +1,7 @@
 # preempt
-Code submission for ACM CCS 2025
+Code for experiments and results found in Prϵϵmpt: Sanitizing Sensitive Prompts for LLMs (link will be available soon). 
+
+A more modular version can be found in the `modular` branch of the repository.
 
 ## Setup
 Install libraries in a Python 3.11.4 virtual environment with `requirements.txt`.
@@ -14,6 +16,7 @@ Using the [Universal-NER](https://github.com/universal-ner/universal-ner) models
 All relevant long-context Q/A experiment code, results and details can be found under `long_context_task`.
 
 ### Multi-turn Financial Q/A
+All relevant multi-turn financial Q/A experiment code, results and details can be found under `multi_turn_qa`.
 
 ### RAG
 Spin up local LLM using:
