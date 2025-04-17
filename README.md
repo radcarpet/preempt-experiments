@@ -1,7 +1,7 @@
 # preempt
 Code for experiments and results found in [Prϵϵmpt: Sanitizing Sensitive Prompts for LLMs](https://arxiv.org/abs/2504.05147). 
 
-A more modular version suitable for use in other projects can be found in the `modular` branch of the repository.
+A more modular version suitable for use in other projects can be found at [this link](https://github.com/danshumaan/preempt).
 
 ## Setup
 Install libraries in a Python 3.11.4 virtual environment with `requirements.txt`.
